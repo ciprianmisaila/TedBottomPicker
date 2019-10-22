@@ -4,12 +4,29 @@ import android.annotation.SuppressLint;
 import android.content.ContentUris;
 import android.content.Context;
 import android.content.CursorLoader;
+import android.content.Intent;
+import android.content.res.AssetFileDescriptor;
 import android.database.Cursor;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Environment;
 import android.provider.DocumentsContract;
 import android.provider.MediaStore;
+
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileDescriptor;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Locale;
 
 /**
  * Created by TedPark on 2016. 11. 5..
@@ -90,7 +107,17 @@ public class RealPathUtil {
             if (isGooglePhotosUri(uri))
                 return uri.getLastPathSegment();
 
-            return getDataColumn(context, uri, null, null);
+            if (isGooglePhotosUriExt(uri)){
+                try {
+
+                    InputStream is = context.getContentResolver().openInputStream(uri);
+                    Bitmap pictureBitmap = BitmapFactory.decodeStream(is);
+                    Uri newuri = getImageUri(context, pictureBitmap);
+                    return newuri.getPath();
+                }catch (Exception ex){
+                    ex.printStackTrace();
+                }
+            }
         }
         // File
         else if ("file".equalsIgnoreCase(uri.getScheme())) {
@@ -98,6 +125,26 @@ public class RealPathUtil {
         }
 
         return null;
+    }
+
+    public static Uri getImageUri(Context context, Bitmap bitmap) {
+        File cacheDir = context.getCacheDir();
+        String timeStamp = new SimpleDateFormat("yyyyMMddHHmmss", Locale.getDefault()).format(new Date());
+        String imageFileName = "JPEG_" + timeStamp + ".jpg";
+        File f = new File(cacheDir, imageFileName);
+        FileOutputStream out = null;
+        try {
+            out = new FileOutputStream(f);
+            bitmap.compress(Bitmap.CompressFormat.JPEG, 100, out);
+            out.flush();
+            out.close();
+
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return Uri.fromFile(f);
     }
 
     /**
@@ -172,7 +219,11 @@ public class RealPathUtil {
      */
     public static boolean isGooglePhotosUri(Uri uri) {
         return "com.google.android.apps.photos.content".equals(uri
-                .getAuthority()) || "com.google.android.apps.photos.contentprovider".equals(uri
+                .getAuthority());
+    }
+
+    public static boolean isGooglePhotosUriExt(Uri uri) {
+        return  "com.google.android.apps.photos.contentprovider".equals(uri
                 .getAuthority());
     }
 

@@ -3,6 +3,7 @@ package gun0912.tedbottompicker;
 import android.Manifest;
 import android.app.Activity;
 import android.app.Dialog;
+import android.content.ClipData;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
@@ -57,6 +58,8 @@ import java.util.Locale;
 
 import gun0912.tedbottompicker.adapter.GalleryAdapter;
 import gun0912.tedbottompicker.util.RealPathUtil;
+
+import static android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION;
 
 public class TedBottomSheetDialogFragment extends BottomSheetDialogFragment {
 
@@ -399,7 +402,7 @@ public class TedBottomSheetDialogFragment extends BottomSheetDialogFragment {
         List<ResolveInfo> resolvedIntentActivities = getContext().getPackageManager().queryIntentActivities(cameraInent, PackageManager.MATCH_DEFAULT_ONLY);
         for (ResolveInfo resolvedIntentInfo : resolvedIntentActivities) {
             String packageName = resolvedIntentInfo.activityInfo.packageName;
-            getContext().grantUriPermission(packageName, photoURI, Intent.FLAG_GRANT_WRITE_URI_PERMISSION | Intent.FLAG_GRANT_READ_URI_PERMISSION);
+            getContext().grantUriPermission(packageName, photoURI, Intent.FLAG_GRANT_WRITE_URI_PERMISSION | FLAG_GRANT_READ_URI_PERMISSION);
         }
 
         cameraInent.putExtra(MediaStore.EXTRA_OUTPUT, photoURI);
@@ -490,6 +493,9 @@ public class TedBottomSheetDialogFragment extends BottomSheetDialogFragment {
         Uri uri;
         if (builder.mediaType == BaseBuilder.MediaType.IMAGE) {
             galleryIntent = new Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
+            galleryIntent.addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION| Intent.FLAG_GRANT_WRITE_URI_PERMISSION| Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION);
+            ClipData clipData = ClipData.newRawUri(null, MediaStore.Images.Media.EXTERNAL_CONTENT_URI);
+            galleryIntent.setClipData(clipData);
             galleryIntent.setType("image/*");
         } else {
             galleryIntent = new Intent(Intent.ACTION_PICK, MediaStore.Video.Media.EXTERNAL_CONTENT_URI);
@@ -509,6 +515,7 @@ public class TedBottomSheetDialogFragment extends BottomSheetDialogFragment {
                     public void onActivityResult(int resultCode, Intent data) {
                         if (resultCode == Activity.RESULT_OK) {
                             onActivityResultGallery(data);
+
                         }
                     }
                 })
