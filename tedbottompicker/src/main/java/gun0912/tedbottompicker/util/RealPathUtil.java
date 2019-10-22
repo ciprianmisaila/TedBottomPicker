@@ -172,6 +172,7 @@ public class RealPathUtil {
      */
     public static boolean isGooglePhotosUri(Uri uri) {
         return "com.google.android.apps.photos.content".equals(uri
+                .getAuthority()) || "com.google.android.apps.photos.contentprovider".equals(uri
                 .getAuthority());
     }
 
