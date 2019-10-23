@@ -10,6 +10,7 @@ import android.content.res.AssetFileDescriptor;
 import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.location.Location;
 import android.media.ExifInterface;
 import android.net.Uri;
 import android.os.Build;
@@ -199,8 +200,46 @@ public class RealPathUtil {
             exif = new ExifInterface(photo.getCanonicalPath());
             if (exif != null) {
                 if (date != null) exif.setAttribute(ExifInterface.TAG_DATETIME, getDate(Long.parseLong(date)));
-                if (latitude != null) exif.setAttribute(ExifInterface.TAG_GPS_LATITUDE, latitude);
-                if (longitude != null) exif.setAttribute(ExifInterface.TAG_GPS_LONGITUDE, longitude);
+
+                if(latitude != null && longitude != null){
+                    double lat = Double.parseDouble(latitude);
+                    double lon = Double.parseDouble(longitude);
+                    double alat = Math.abs(lat);
+                    double alon = Math.abs(lon);
+                    String dms = Location.convert(alat, Location.FORMAT_SECONDS);
+                    String[] splits = dms.split(":");
+                    String[] secnds = (splits[2]).split("\\.");
+                    String seconds;
+                    if(secnds.length==0)
+                    {
+                        seconds = splits[2];
+                    }
+                    else
+                    {
+                        seconds = secnds[0];
+                    }
+                    String latitudeStr = splits[0] + "/1," + splits[1] + "/1," + seconds + "/1";
+                    exif.setAttribute(ExifInterface.TAG_GPS_LATITUDE, latitudeStr);
+                    exif.setAttribute(ExifInterface.TAG_GPS_LATITUDE_REF, lat>0?"N":"S");
+
+                    dms = Location.convert(alon, Location.FORMAT_SECONDS);
+                    splits = dms.split(":");
+                    secnds = (splits[2]).split("\\.");
+
+                    if(secnds.length==0)
+                    {
+                        seconds = splits[2];
+                    }
+                    else
+                    {
+                        seconds = secnds[0];
+                    }
+                    String longitudeStr = splits[0] + "/1," + splits[1] + "/1," + seconds + "/1";
+
+
+                    exif.setAttribute(ExifInterface.TAG_GPS_LONGITUDE, longitudeStr);
+                    exif.setAttribute(ExifInterface.TAG_GPS_LONGITUDE_REF, lon>0?"E":"W");
+                }
                 exif.saveAttributes();
             }
         } catch (IOException e) {
