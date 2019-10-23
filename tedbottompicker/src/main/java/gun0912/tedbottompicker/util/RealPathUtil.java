@@ -17,6 +17,7 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.provider.DocumentsContract;
 import android.provider.MediaStore;
+import android.text.format.DateFormat;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -28,6 +29,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.Locale;
 
@@ -196,7 +198,7 @@ public class RealPathUtil {
         try{
             exif = new ExifInterface(photo.getCanonicalPath());
             if (exif != null) {
-                if (date != null) exif.setAttribute(ExifInterface.TAG_DATETIME, date);
+                if (date != null) exif.setAttribute(ExifInterface.TAG_DATETIME, getDate(Long.parseLong(date)));
                 if (latitude != null) exif.setAttribute(ExifInterface.TAG_GPS_LATITUDE, latitude);
                 if (longitude != null) exif.setAttribute(ExifInterface.TAG_GPS_LONGITUDE, longitude);
                 exif.saveAttributes();
@@ -206,6 +208,13 @@ public class RealPathUtil {
             e.printStackTrace();
         }
 
+    }
+
+    public static String getDate(long time) {
+        Calendar cal = Calendar.getInstance(Locale.ENGLISH);
+        cal.setTimeInMillis(time);
+        String date = DateFormat.format("yyyy:MM:dd hh:mm:ss", cal).toString();
+        return date;
     }
 
     /**
