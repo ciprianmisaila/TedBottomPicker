@@ -5,12 +5,15 @@ import android.content.ContentUris;
 import android.content.Context;
 import android.content.CursorLoader;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.res.AssetFileDescriptor;
 import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.media.ExifInterface;
 import android.net.Uri;
 import android.os.Build;
+import android.os.Bundle;
 import android.os.Environment;
 import android.provider.DocumentsContract;
 import android.provider.MediaStore;
@@ -110,9 +113,42 @@ public class RealPathUtil {
             if (isGooglePhotosUriExt(uri)){
                 try {
 
+                    Cursor cursor = null;
+                    final String column1 = "datetaken";     String date = null;
+                    final String column2 = "_display_name"; String fileName = null;
+                    final String column3 = "_id";
+                    final String column4 = "_data";
+                    final String column5 = "latitude";      String lat = null;
+                    final String column6 = "longitude";     String lon = null;
+                    final String column7 = "special_type_id";
+
+                   final String[] projection = { column1 , column2};
+
+                    try {
+                        cursor = context.getContentResolver().query(uri, null,
+                                null, null, null);
+                        if (cursor != null && cursor.moveToFirst()) {
+                            final int index1 = cursor.getColumnIndexOrThrow(column1);
+                            final int index2 = cursor.getColumnIndexOrThrow(column2);
+                            final int index3 = cursor.getColumnIndexOrThrow(column3);
+                            final int index4 = cursor.getColumnIndexOrThrow(column4);
+                            final int index5 = cursor.getColumnIndexOrThrow(column5);
+                            final int index6 = cursor.getColumnIndexOrThrow(column6);
+                            final int index7 = cursor.getColumnIndexOrThrow(column7);
+                            date = cursor.getString(index1);
+                            fileName = cursor.getString(index2);
+                            String id = cursor.getString(index3);
+                            lat = cursor.getString(index5);
+                            lon = cursor.getString(index6);
+                        }
+                    } finally {
+                        if (cursor != null)
+                            cursor.close();
+                    }
+
                     InputStream is = context.getContentResolver().openInputStream(uri);
                     Bitmap pictureBitmap = BitmapFactory.decodeStream(is);
-                    Uri newuri = getImageUri(context, pictureBitmap);
+                    Uri newuri = getImageUri(context, pictureBitmap, fileName, date, lat, lon);
                     return newuri.getPath();
                 }catch (Exception ex){
                     ex.printStackTrace();
@@ -127,10 +163,16 @@ public class RealPathUtil {
         return null;
     }
 
-    public static Uri getImageUri(Context context, Bitmap bitmap) {
+    public static Uri getImageUri(Context context, Bitmap bitmap, String name, String date, String latitude, String longitude) {
         File cacheDir = context.getCacheDir();
-        String timeStamp = new SimpleDateFormat("yyyyMMddHHmmss", Locale.getDefault()).format(new Date());
-        String imageFileName = "JPEG_" + timeStamp + ".jpg";
+        String imageFileName = null;
+        if (name == null) {
+            String timeStamp = new SimpleDateFormat("yyyyMMddHHmmss", Locale.getDefault()).format(new Date());
+            imageFileName = "JPEG_" + timeStamp + ".jpg";
+        }else{
+            imageFileName = name;
+        }
+
         File f = new File(cacheDir, imageFileName);
         FileOutputStream out = null;
         try {
@@ -144,7 +186,26 @@ public class RealPathUtil {
         } catch (IOException e) {
             e.printStackTrace();
         }
+        saveExifData(f, date, latitude, longitude);
         return Uri.fromFile(f);
+    }
+
+    public static void saveExifData(File photo, String date, String latitude, String longitude){
+        ExifInterface exif = null;
+
+        try{
+            exif = new ExifInterface(photo.getCanonicalPath());
+            if (exif != null) {
+                if (date != null) exif.setAttribute(ExifInterface.TAG_DATETIME, date);
+                if (latitude != null) exif.setAttribute(ExifInterface.TAG_GPS_LATITUDE, latitude);
+                if (longitude != null) exif.setAttribute(ExifInterface.TAG_GPS_LONGITUDE, longitude);
+                exif.saveAttributes();
+            }
+        } catch (IOException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
+
     }
 
     /**
